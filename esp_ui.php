@@ -2,10 +2,9 @@
 class UIForESP {
     
     protected $currentpage;
-    protected $debug = 1;
+    protected $debug = 0;
     protected $espdb;
     
-
 
     public function __construct($arg = null) {
         $this->currentpage = "searchdevice";
@@ -20,7 +19,7 @@ class UIForESP {
                 #$this->dp("SEARCH");
             } else if ($_GET['page'] == 'addtemp') {
                 $this->currentpage = 'addtemp';
-                #$this->dp("ADD WORDS");
+                #$this->dp("ADD TEMP");
             }
         }
 
@@ -37,7 +36,6 @@ class UIForESP {
                 
                 echo "Device: $device, Temp: $value\n";
                 echo $this->espdb->addNewMeasurementToDB($device, $value);
-                //echo $this->sanakirja->addNewWordToDB($myword2, $_POST['lang2']);
                 return;
             } else if (isset($_POST['hakusana'])) {
                 $searchword = $_POST['hakusana'];
@@ -62,7 +60,7 @@ class UIForESP {
         echo "<br>\n";
     }
 
-
+    # draw html form for searching devices
     private function drawForm($arg = null) {
         if ($arg === null) return;
 
@@ -86,13 +84,6 @@ class UIForESP {
         ';
         
     }
-
-    private function printSearchWordBox($arg = null) {
-        echo'
-
-        ';
-    }
-
 }
 
 $esppi = new UIForESP;
