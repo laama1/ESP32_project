@@ -24,6 +24,7 @@ class espdb extends SQLite3 {
         echo "Error: ".$arg . "<br>\n";
     }
 
+    # debug print ARRAY
     private function pa($arg = null) {
         if ($arg == null || $this->DEBUG == 0) return;
         print_r($arg);
@@ -32,10 +33,10 @@ class espdb extends SQLite3 {
 
 
     private function createDB () {
-        $this->pe("Creating Database for ESP32 Temp measurements...<br>");
+        $this->pe("Creating Database for ESP32 Temp measurements...");
 
         $sqlString = "CREATE TABLE DEVICES (TYPE TEXT NOT NULL COLLATE NOCASE, NAME TEXT NOT NULL COLLATE NOCASE, CREATOR TEXT DEFAULT null, DATETIME INT NOT NULL, DELETED INT DEFAULT 0);
-        CREATE TABLE TEMPERATURES (TEMP TEXT NOT NULL, DEVICE TEXT NOT NULL, DATETIME INT NOT NULL, DELETED INT NOT NULL, XFIELD TEXT DEFAULT NULL);";
+        CREATE TABLE TEMPERATURES (TEMP TEXT NOT NULL, DEVICE TEXT NOT NULL, DATETIME INT NOT NULL, DELETED INT DEFAULT 0, XFIELD TEXT DEFAULT NULL);";
         #$sqlString = "CREATE VIRTUAL TABLE SANAKIRJA using FTS4 (LANGUAGE, CREATOR, DATETIME, DELETED)";
         $ret;
         try {
@@ -59,20 +60,21 @@ class espdb extends SQLite3 {
     }
 
 
-    # Add new word to dictionary and calculate new indexnbr that should match in _all_ dictionaries. This is how we compare and translate between
-    # multiple languages. Use $decrement to determine if we are adding the second one of the word pair (quick hack).
+    # Add new Temperature measurement to table.
     public function addNewMeasurementToDB($device = null, $value = null) {
         if ($device === null || $value === null) return -1;
         $this->pa($this->searchDeviceFromDB($device));
         if ($this->searchDeviceFromDB($device)) {
-            $sqlString ="INSERT INTO $language(indexnbr, WORD, extrafield1) VALUES($maxIndexNbr, '$word', 0)";
+            # TEMP, DEVICE, DATETIME, DELETED, XFIELD
+            $newtime = time();
+            $sqlString ="INSERT INTO TEMPERATURES (TEMP, DEVICE, DATETIME) VALUES('$value', '$device', '$newtime')";
             $this->db = new PDO("sqlite:$this->dbpath");
             $this->db->exec($sqlString);
             $this->db = null;
             return "Query String executed!";
         } else {
             # add device?
-            $this->addDevice();
+            $this->addDevice($device);
         }
         //return "Lisätty $device ($value) <br><br>";
 
