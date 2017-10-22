@@ -3,4 +3,4 @@
 # esp_ui.php: PHP script for receiving data.
 # espdb.php: Save data to a sqlite database. Create DB if it doesn't exist.
 # esp_with_arg.php: PHP-script for Munin.
-# espdb.sqlite: Small sample SQLite database for you.
+# esp.sqlite: Small sample SQLite database for you.
