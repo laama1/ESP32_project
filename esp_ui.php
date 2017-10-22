@@ -2,7 +2,7 @@
 class UIForESP {
     
     protected $currentpage;
-    protected $debug = 0;
+    protected $debug = 1;
     protected $espdb;
     
 

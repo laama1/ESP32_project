@@ -6,22 +6,24 @@ class espdb extends SQLite3 {
 
     public function __construct($arg = null) {
         if (!file_exists($this->dbpath)) {
-        //if ($this->open($this->dbpath)) {
             if ($this->createDB()) {
                 echo "Database created.";
             }
         } else {
-            //die($sqliteerror);
+            $this->pi("SQLite table exist.");
         }
-
-
-
     }
 
     # print errors
     private function pe($arg = null) {
-        if ($arg === null) return;
+        if ($arg === null || $this->DEBUG == 0) return;
         echo "Error: ".$arg . "<br>\n";
+    }
+
+    # print info
+    private function pi($arg = null) {
+        if ($arg === null || $this->DEBUG == 0) return;
+        echo "Info: ".$arg ."<br>\n";
     }
 
     # debug print ARRAY
@@ -33,7 +35,7 @@ class espdb extends SQLite3 {
 
 
     private function createDB () {
-        $this->pe("Creating Database for ESP32 Temp measurements...");
+        $this->pi("Creating Database for ESP32 Temp measurements...");
 
         $sqlString = "CREATE TABLE DEVICES (TYPE TEXT NOT NULL COLLATE NOCASE, NAME TEXT NOT NULL COLLATE NOCASE, CREATOR TEXT DEFAULT null, DATETIME INT NOT NULL, DELETED INT DEFAULT 0);
         CREATE TABLE TEMPERATURES (TEMP TEXT NOT NULL, DEVICE TEXT NOT NULL, DATETIME INT NOT NULL, DELETED INT DEFAULT 0, XFIELD TEXT DEFAULT NULL);";
@@ -63,26 +65,24 @@ class espdb extends SQLite3 {
     # Add new Temperature measurement to table.
     public function addNewMeasurementToDB($device = null, $value = null) {
         if ($device === null || $value === null) return -1;
-        $this->pa($this->searchDeviceFromDB($device));
+        //$this->pa($this->searchDeviceFromDB($device));
         if ($this->searchDeviceFromDB($device)) {
             # TEMP, DEVICE, DATETIME, DELETED, XFIELD
             $newtime = time();
+            $this->pi("Adding new measurement: $value, device: $device, time: $newtime");
             $sqlString ="INSERT INTO TEMPERATURES (TEMP, DEVICE, DATETIME) VALUES('$value', '$device', '$newtime')";
-            $this->db = new PDO("sqlite:$this->dbpath");
-            $this->db->exec($sqlString);
-            $this->db = null;
-            return "Query String executed!";
+            return $this->insertIntoDB($sqlString);
         } else {
             # add device?
             $this->addDevice($device);
         }
-        //return "Lisätty $device ($value) <br><br>";
-
     }
 
     public function searchDeviceFromDB($searchword = null) {
         if ($searchword === null ) return -1;
         $sqlString = "SELECT * from DEVICES where name = '$searchword'";
+        # $this->da();
+        $this->pi("searchDeviceFromDB: $searchword");
         return $this->getResultsFromDBQuery($sqlString);
     }
 
@@ -97,26 +97,29 @@ class espdb extends SQLite3 {
         if ($device === null) return -1;
         # TYPE, NAME, CREATOR, DATETIME, DELETED
         $timenow = time();
-        $sqlString = "INSERT INTO DEVICES('esp', '$device', 'MATTI', '$timenow', 0)";
+        $sqlString = "INSERT INTO DEVICES (TYPE, NAME, CREATOR, DATETIME, DELETED) VALUES('esp', '$device', 'MATTI', '$timenow', 0)";
         //$sqlString2 = "CREATE VIRTUAL TABLE ? using FTS4(indexnbr, word, extrafield1);";
         $rtvalue = $this->insertIntoDB($sqlString);
-        $this->pe("$rtvalue");
+        $this->pe("addDevice: $rtvalue");
     }
 
 
     private function insertIntoDB($sqlString = null) {
         if ($sqlString === null) return -1;
         try {
-			$this->db = new PDO("sqlite:$this->dbpath");
+			$this->db = new PDO("sqlite:".$this->dbpath);
 			$pdostmt = $this->db->prepare($sqlString);
-			if ($pdostmt->execute()) {
+			if ($pdostmt != null && $pdostmt->execute()) {
                 $this->db = null;
 				return true;
-			}
+			} else {
+                $this->pe("insertIntoDB ERROR.. $sqlString");
+                $this->pa($pdostmt);
+            }
         } catch(PDOException $e) {
-            $this->pe($e);
+            $this->pe("insertIntoDB: ".$e);
         } catch(EXCeption $e) {
-            $this->pe($e);
+            $this->pe("insertIntoDB: ".$e);
         }
         $this->db = null;
         return -2;
@@ -136,9 +139,9 @@ class espdb extends SQLite3 {
 				}
 			}
 		} catch(PDOException $e) {
-            $this->pe($e);
+            $this->pe("getResultsFromDBQuery: ".$e);
 		} catch(Exception $e) {
-			$this->pe($e);
+			$this->pe("getResultsFromDBQuery: ".$e);
         }
         $this->db = null;
 		return -2;
