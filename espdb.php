@@ -9,7 +9,7 @@
 class espdb extends SQLite3 {
     protected $dbpath = "esp.sqlite";
     protected $db;
-    protected $DEBUG = 1;
+    protected $DEBUG = 0;
 
     public function __construct($arg = null) {
         if (!file_exists($this->dbpath)) {
@@ -72,13 +72,14 @@ class espdb extends SQLite3 {
 
 
     # Add new Temperature measurement to table.
-    public function addNewMeasurementToDB($device = null, $value = null, $esptime = null, $espbc = null) {
+    public function addNewMeasurementToDB($device = null, $value = null, $esptime = null, $espbc = null, $espSensorID = null) {
         if ($device === null || $value === null) return -1;
         if ($this->searchDeviceFromDB($device)) {
             # TEMP, DEVICE, DATETIME, DELETED, ESPTIME, BOOTCOUNT
+            # MEASUREMENTS (TYPE, VALUE, DEVICEID, SENSORID, DATETIME, DELETED, DEVICETIME, BOOTCOUNT);";
             $newtime = time();
             $this->pi("Adding new measurement: $value, device: $device, time: $newtime, esptime: $esptime, bootcount: $espbc");
-            $sqlString ="INSERT INTO TEMPERATURES (TEMP, DEVICE, DATETIME, BOOTCOUNT) VALUES('$value', '$device', '$newtime', '$espbc')";
+            $sqlString ="INSERT INTO MEASUREMENTS (VALUE, DEVICEID, DATETIME, BOOTCOUNT, SENSORID) VALUES('$value', '$device', '$newtime', '$espbc', '$espSensorID')";
             return $this->insertIntoDB($sqlString);
         } else {
             # add device?
@@ -93,16 +94,10 @@ class espdb extends SQLite3 {
         return $this->getResultsFromDBQuery($sqlString);
     }
 
-    # search for existing language
-    private function searchLanguageFromDB($language = null) {
-        if ($searchword === null ) return -1;
-        $sqlString ="SELECT * from SANAKIRJA where LANGNAME = ?";
-    }
-
-    # add new language / dictionary
+    # add new device to DB
     private function addDevice($device = null, $creator = null) {
         if ($device === null) return -1;
-        # TYPE, NAME, CREATOR, DATETIME, DELETED
+        # TYPE, NAME, CREATOR, DATETIME, NICK, DELETED
         $timenow = time();
         $sqlString = "INSERT INTO DEVICES (TYPE, NAME, CREATOR, DATETIME, DELETED) VALUES('esp', '$device', 'MATTI', '$timenow', 0)";
         //$sqlString2 = "CREATE VIRTUAL TABLE ? using FTS4(indexnbr, word, extrafield1);";

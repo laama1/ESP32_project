@@ -2,7 +2,7 @@
 class UIForESP {
     
     protected $currentpage;
-    protected $debug = 1;
+    protected $debug = 0;
     protected $espdb;
     
 
@@ -28,12 +28,18 @@ class UIForESP {
                 # add new word pair...
                 $device = $_POST['device'];
                 $value = $_POST['addtemp'];
+                $sensorID = $_POST['sensorid'];
+                $bootcount;
+                $mytime;
                 if (isset($_POST['time'])) {
                     $mytime = $_POST['time'];
                 }
+                if (isset($_POST['bc']) && is_numeric($_POST['bc'])) {
+                    $bootcount = $_POST['bc'];
+                }
                 
-                echo "Device: $device, Temp: $value\n";
-                echo $this->espdb->addNewMeasurementToDB($device, $value);
+                $this->dp("Device: $device, Value: $value, bootcount: $bootcount\n");
+                echo $this->espdb->addNewMeasurementToDB($device, $value, $mytime, $bootcount, $sensorID);
                 return;
             } else if (isset($_POST['hakusana'])) {
                 $searchword = $_POST['hakusana'];
