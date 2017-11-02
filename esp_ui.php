@@ -12,8 +12,6 @@ class UIForESP {
         $this->espdb = new espdb;
 
         if (isset($_GET['page'])) {
-            #$this->dp("GET SOMETHING");
-            #$this->da($_GET);
             if ($_GET['page'] == 'searchdevice') {
                 $this->currentpage = 'searchdevice';
                 #$this->dp("SEARCH");
@@ -44,7 +42,9 @@ class UIForESP {
             }
         }
         # TODO: Print available devices
+        $this->drawHeader();
         $this->drawForm($this->currentpage);
+        $this->drawFooter();
     }
 
     # debug print string
@@ -58,6 +58,20 @@ class UIForESP {
         if ($arg === null || $this->debug == 0) return;
         print_r($arg);
         echo "<br>\n";
+    }
+
+    private function drawFooter() {
+        echo'</body>
+        </html>';
+    }
+    private function drawHeader() {
+        echo '<!DOCTYPE html>
+        <html>
+        <head>
+            <title>IoT DataZ</title>
+        </head>
+        <body>
+        ';
     }
 
     # draw html form for searching devices
@@ -80,7 +94,7 @@ class UIForESP {
         </div>
         
         </fieldset>
-        </form>
+    </form>
         ';
         
     }

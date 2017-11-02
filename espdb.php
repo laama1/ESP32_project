@@ -1,4 +1,11 @@
 <?php
+
+// AUTHOR: Lasse Pihlainen
+// CREATED: 22.10.2017
+// Edited: 23.10.2017,
+// LICENSE: BSD
+
+
 class espdb extends SQLite3 {
     protected $dbpath = "esp.sqlite";
     protected $db;
@@ -7,7 +14,9 @@ class espdb extends SQLite3 {
     public function __construct($arg = null) {
         if (!file_exists($this->dbpath)) {
             if ($this->createDB()) {
-                echo "Database created.";
+                echo "Database created.<br>";
+            } else {
+                echo "Error creating database.<br>";
             }
         } else {
             $this->pi("SQLite table exist.");
@@ -37,10 +46,10 @@ class espdb extends SQLite3 {
     private function createDB () {
         $this->pi("Creating Database for ESP32 Temp measurements...");
 
-        $sqlString = "CREATE TABLE DEVICES (TYPE TEXT NOT NULL COLLATE NOCASE, NAME TEXT NOT NULL COLLATE NOCASE, CREATOR TEXT DEFAULT null, DATETIME INT NOT NULL, DELETED INT DEFAULT 0);
-        CREATE TABLE TEMPERATURES (TEMP TEXT NOT NULL, DEVICE TEXT NOT NULL, DATETIME INT NOT NULL, DELETED INT DEFAULT 0, XFIELD TEXT DEFAULT NULL);";
-        #$sqlString = "CREATE VIRTUAL TABLE SANAKIRJA using FTS4 (LANGUAGE, CREATOR, DATETIME, DELETED)";
-        $ret;
+        $sqlString = "CREATE TABLE DEVICES (TYPE TEXT NOT NULL COLLATE NOCASE, NAME TEXT NOT NULL COLLATE NOCASE, CREATOR TEXT DEFAULT null, DATETIME INT NOT NULL, NICK TEXT DEFAULT NULL, DELETED INT DEFAULT 0);
+        CREATE TABLE MEASUREMENTS (TYPE TEXT, VALUE TEXT, DEVICEID TEXT NOT NULL, SENSORID TEXT, DATETIME INT NOT NULL, DELETED INT DEFAULT 0, DEVICETIME TEXT, BOOTCOUNT INT);";
+        #CREATE VIRTUAL TABLE MEASUREMENTS (TYPE, VALUE, DEVICEID, SENSORID, DATETIME, DELETED, DEVICETIME, BOOTCOUNT);";
+        $ret = 0;
         try {
             $this->db = new PDO("sqlite:$this->dbpath");
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -63,14 +72,13 @@ class espdb extends SQLite3 {
 
 
     # Add new Temperature measurement to table.
-    public function addNewMeasurementToDB($device = null, $value = null) {
+    public function addNewMeasurementToDB($device = null, $value = null, $esptime = null, $espbc = null) {
         if ($device === null || $value === null) return -1;
-        //$this->pa($this->searchDeviceFromDB($device));
         if ($this->searchDeviceFromDB($device)) {
-            # TEMP, DEVICE, DATETIME, DELETED, XFIELD
+            # TEMP, DEVICE, DATETIME, DELETED, ESPTIME, BOOTCOUNT
             $newtime = time();
-            $this->pi("Adding new measurement: $value, device: $device, time: $newtime");
-            $sqlString ="INSERT INTO TEMPERATURES (TEMP, DEVICE, DATETIME) VALUES('$value', '$device', '$newtime')";
+            $this->pi("Adding new measurement: $value, device: $device, time: $newtime, esptime: $esptime, bootcount: $espbc");
+            $sqlString ="INSERT INTO TEMPERATURES (TEMP, DEVICE, DATETIME, BOOTCOUNT) VALUES('$value', '$device', '$newtime', '$espbc')";
             return $this->insertIntoDB($sqlString);
         } else {
             # add device?
@@ -81,7 +89,6 @@ class espdb extends SQLite3 {
     public function searchDeviceFromDB($searchword = null) {
         if ($searchword === null ) return -1;
         $sqlString = "SELECT * from DEVICES where name = '$searchword'";
-        # $this->da();
         $this->pi("searchDeviceFromDB: $searchword");
         return $this->getResultsFromDBQuery($sqlString);
     }
@@ -100,7 +107,7 @@ class espdb extends SQLite3 {
         $sqlString = "INSERT INTO DEVICES (TYPE, NAME, CREATOR, DATETIME, DELETED) VALUES('esp', '$device', 'MATTI', '$timenow', 0)";
         //$sqlString2 = "CREATE VIRTUAL TABLE ? using FTS4(indexnbr, word, extrafield1);";
         $rtvalue = $this->insertIntoDB($sqlString);
-        $this->pe("addDevice: $rtvalue");
+        $this->pi("addDevice: $rtvalue");
     }
 
 
