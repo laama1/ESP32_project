@@ -9,7 +9,7 @@
 class espdb extends SQLite3 {
     protected $dbpath = "esp.sqlite";
     protected $db;
-    protected $DEBUG = 0;
+    protected $DEBUG = 1;
 
     public function __construct($arg = null) {
         if (!file_exists($this->dbpath)) {
@@ -71,26 +71,41 @@ class espdb extends SQLite3 {
     }
 
 
+    public function getAllMeasurementsOfDevice($arg = null) {
+        if ($arg === null) return;
+        # MEASUREMENTS (TYPE, VALUE, DEVICEID, SENSORID, DATETIME, DELETED, DEVICETIME, BOOTCOUNT);";
+        $sqlString = "Select * from MEASUREMENTS where DEVICEID = '$arg'";
+        return $this->getResultsFromDBQuery($sqlString);
+    }
+
     # Add new Temperature measurement to table.
-    public function addNewMeasurementToDB($device = null, $value = null, $esptime = null, $espbc = null, $espSensorID = null) {
+    public function addNewMeasurementToDB($type = null, $device = null, $value = null, $esptime = null, $espbc = null, $espSensorID = null) {
         if ($device === null || $value === null) return -1;
         if ($this->searchDeviceFromDB($device)) {
-            # TEMP, DEVICE, DATETIME, DELETED, ESPTIME, BOOTCOUNT
             # MEASUREMENTS (TYPE, VALUE, DEVICEID, SENSORID, DATETIME, DELETED, DEVICETIME, BOOTCOUNT);";
             $newtime = time();
-            $this->pi("Adding new measurement: $value, device: $device, time: $newtime, esptime: $esptime, bootcount: $espbc");
-            $sqlString ="INSERT INTO MEASUREMENTS (VALUE, DEVICEID, DATETIME, BOOTCOUNT, SENSORID) VALUES('$value', '$device', '$newtime', '$espbc', '$espSensorID')";
-            return $this->insertIntoDB($sqlString);
+            $this->pi("Adding new measurement type: $type, value: $value, device: $device, sensor: $espSensorID, time: $newtime, esptime: $esptime, bootcount: $espbc");
+            $sqlString = "INSERT INTO MEASUREMENTS (TYPE, VALUE, DEVICEID, SENSORID, DATETIME, DELETED, DEVICETIME, BOOTCOUNT)
+                         VALUES('$type', '$value', '$device', '$espSensorID', '$newtime', 0, '0', $espbc)";
+            $rtvalue = $this->insertIntoDB($sqlString);
+            $this->pi($rtvalue);
+            return $rtvalue;
         } else {
-            # add device?
             $this->addDevice($device);
+            # TODO: Add measurement?
         }
+    }
+
+    public function getAllDevicesFromDB() {
+        $sqlString = "Select * from devices";
+        return $this->getResultsFromDBQuery($sqlString);
     }
 
     public function searchDeviceFromDB($searchword = null) {
         if ($searchword === null ) return -1;
+        # DEVICES (TYPE, NAME, CREATOR, DATETIME, NICK, DELETED)
         $sqlString = "SELECT * from DEVICES where name = '$searchword'";
-        $this->pi("searchDeviceFromDB: $searchword");
+        #$this->pi("searchDeviceFromDB: $searchword");
         return $this->getResultsFromDBQuery($sqlString);
     }
 
@@ -98,8 +113,9 @@ class espdb extends SQLite3 {
     private function addDevice($device = null, $creator = null) {
         if ($device === null) return -1;
         # TYPE, NAME, CREATOR, DATETIME, NICK, DELETED
+        # DEVICES (TYPE, NAME, CREATOR, DATETIME, NICK, DELETED
         $timenow = time();
-        $sqlString = "INSERT INTO DEVICES (TYPE, NAME, CREATOR, DATETIME, DELETED) VALUES('esp', '$device', 'MATTI', '$timenow', 0)";
+        $sqlString = "INSERT INTO DEVICES (TYPE, NAME, CREATOR, DATETIME, NICK, DELETED) VALUES('esp', '$device', 'MATTI', '$timenow', '', 0)";
         //$sqlString2 = "CREATE VIRTUAL TABLE ? using FTS4(indexnbr, word, extrafield1);";
         $rtvalue = $this->insertIntoDB($sqlString);
         $this->pi("addDevice: $rtvalue");
@@ -109,14 +125,17 @@ class espdb extends SQLite3 {
     private function insertIntoDB($sqlString = null) {
         if ($sqlString === null) return -1;
         try {
-			$this->db = new PDO("sqlite:".$this->dbpath);
-			$pdostmt = $this->db->prepare($sqlString);
-			if ($pdostmt != null && $pdostmt->execute()) {
-                $this->db = null;
-				return true;
-			} else {
-                $this->pe("insertIntoDB ERROR.. $sqlString");
-                $this->pa($pdostmt);
+			$this->db = new PDO("sqlite:$this->dbpath");
+			if ($pdostmt = $this->db->prepare($sqlString)) {
+			    if ($pdostmt->execute()) {
+                    $this->db = null;
+				    return true;
+			    } else {
+                    $this->pe("insertIntoDB ERROR.. $sqlString");
+                    #$this->pa($pdostmt);
+                }
+            } else {
+                $this->pe("insertIntoDB prepare statement error.");
             }
         } catch(PDOException $e) {
             $this->pe("insertIntoDB: ".$e);
