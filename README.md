@@ -1,4 +1,4 @@
-# ESP32_project
+# ESP32_project. Espressif SDK needed from https://github.com/espressif/arduino-esp32.
 # ESP32 Arduino IDE code.
 # esp_ui.php: PHP script for receiving data.
 # espdb.php: Save data to a sqlite database. Create DB if it doesn't exist.
