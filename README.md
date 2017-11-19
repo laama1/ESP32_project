@@ -6,7 +6,7 @@
 # esp_with_arg.php: PHP-script for Munin (work in progress).
 # esp.sqlite: Small sample SQLite database for you.
 
-# OneWire.h: https://github.com/PaulStoffregen/OneWire
+# OneWire.h Arduino module: https://github.com/PaulStoffregen/OneWire
 
 # On FEDORA systems, you need to install php-pdo package with dnf.
 # Also, if you enable public_html (userdir module) and have SELinux enabled, do:
