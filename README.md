@@ -1,11 +1,14 @@
-# ESP32_project
-# ESP32 Arduino IDE code (not yet released).
+# ESP32_project.
+# ESP32 Arduino IDE code. Espressif SDK needed from https://github.com/espressif/arduino-esp32.
+
 # esp_ui.php: PHP script for receiving data.
 # espdb.php: Save data to a sqlite database. Create DB if it doesn't exist.
-# esp_with_arg.php: PHP-script for Munin.
+# esp_with_arg.php: PHP-script for Munin (work in progress).
 # esp.sqlite: Small sample SQLite database for you.
 
-# On FEDORA Systems, you need to install php-pdo package with dnf.
+# OneWire.h Arduino module: https://github.com/PaulStoffregen/OneWire
+
+# On FEDORA systems, you need to install php-pdo package with dnf.
 # Also, if you enable public_html (userdir module) and have SELinux enabled, do:
 # chcon -R -t httpd_sys_rw_content_t /home/user/public_html/esp
-# That way, apache can create a database for you, per espdb.php.
+# That way, apache can have write access and create a database for you, per espdb.php.
