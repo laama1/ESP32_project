@@ -10,10 +10,12 @@ PHP-script for Munin-monitoring (work in progress).
 # esp.sqlite:
 Small sample SQLite database for you.
 
-# OneWire.h Arduino module:
-https://github.com/PaulStoffregen/OneWire
-
+# notes:
 On FEDORA systems, you need to install php-pdo package with dnf.
 Also, if you enable public_html (userdir module) and have SELinux enabled, do:
 chcon -R -t httpd_sys_rw_content_t /home/user/public_html/esp
 That way, apache can have write access and create a database for you, per espdb.php.
+
+# OneWire.h Arduino module:
+https://github.com/PaulStoffregen/OneWire
+
