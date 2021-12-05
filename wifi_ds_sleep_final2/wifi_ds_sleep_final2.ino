@@ -1,29 +1,47 @@
-#include <HTTPClient.h>
+#define ENABLE_DALLAS 0
+#define ENABLE_DHT12 1
+#define SENSOR_TEMP 1
+#define SENSOR_HUMIDITY 2
+#define SENSOR_XYZ 3
 
+#include "Arduino.h"
+
+#if ENABLE_DALLAS == 1
 #include <OneWire.h>
+byte addr[8];       // Current dallas device address
+OneWire  ds(2);  // on pin 2 (a 4.7K resistor is necessary)
+#endif
 
+#if ENABLE_DHT12 == 1
+#include <DHT12.h>
+DHT12 dht12;
+#endif
+
+#include <HTTPClient.h>
 #include <WiFiClient.h>
 #include <WiFi.h>
- 
-const char* ssid = "----";
-const char* password = "----";
+
+/// WIFI STUFF
+const char* ssid = "Kissalan62";
+const char* password = "OlkkariP455u";
+const char* endpoint_address = "http://192.168.0.5/ESP32_project/esp_ui.php";
 
 
 /// SLEEP STUFF
-#define uS_TO_S_FACTOR 1000000      /* Conversion factor for micro seconds to seconds */
+#define uS_TO_S_FACTOR 1000000    /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  50         /* Time ESP32 will go to sleep (in seconds) */
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR unsigned long lastConnectionTime = 0;            // last time you connected to the server, in milliseconds
 
-//const char* serverip = "10.42.2.57";
+
 bool debug = 1;
-bool disconnectBit = false;     // abort connecting when this is "true"
+bool disconnectBit = false;     // abort re-connecting when this is "true"
 
 const unsigned long postingInterval = 20L * 1000L; // delay between updates, in milliseconds
 
 int ledPin = 13; // GPIO13
-OneWire  ds(2);  // on pin 2 (a 4.7K resistor is necessary)
-uint64_t chipid;
+
+uint32_t chipid;
 
 
 /// TIMER STUFF
@@ -265,14 +283,82 @@ void printEncryptionType(int thisType) {
   }
 }
 
-float measureTemp(byte* addr) {
+#if ENABLE_DHT12 == 1
+void measureDHT() {
+  // Report every 2 seconds.
+  delay(2000);
+  
+  DHT12::ReadStatus chk = dht12.readStatus();
+  Serial.print(F("\nRead sensor: "));
+  switch (chk) {
+  case DHT12::OK:
+      Serial.println(F("OK"));
+      break;
+  case DHT12::ERROR_CHECKSUM:
+      Serial.println(F("Checksum error"));
+      break;
+  case DHT12::ERROR_TIMEOUT:
+      Serial.println(F("Timeout error"));
+      break;
+  case DHT12::ERROR_TIMEOUT_LOW:
+      Serial.println(F("Timeout error on low signal, try put high pullup resistance"));
+      break;
+  case DHT12::ERROR_TIMEOUT_HIGH:
+      Serial.println(F("Timeout error on low signal, try put low pullup resistance"));
+      break;
+  case DHT12::ERROR_CONNECT:
+      Serial.println(F("Connect error"));
+      break;
+  case DHT12::ERROR_ACK_L:
+      Serial.println(F("AckL error"));
+      break;
+  case DHT12::ERROR_ACK_H:
+      Serial.println(F("AckH error"));
+      break;
+  case DHT12::ERROR_UNKNOWN:
+      Serial.println(F("Unknown error DETECTED"));
+      break;
+  case DHT12::NONE:
+      Serial.println(F("No result"));
+      break;
+  default:
+      Serial.println(F("Unknown error"));
+      break;
+  }
+
+  
+  float t12 = dht12.readTemperature();  // Reading takes about 250ms
+  float h12 = dht12.readHumidity();
+  if (isnan(t12) || isnan(h12)) {
+    printSerial("Failed to read from DHT12!");
+  } else {
+    // Compute heat index:
+    float hic12 = dht12.computeHeatIndex(t12, h12, false);
+    // Compute dew point:
+    float dpc12 = dht12.dewPoint(t12, h12, false);
+
+    printSerial2("DHT12 Temperature: "+ String(t12));
+    printSerial2(", Humidity: "+ String(h12));
+    printSerial2(", Heat index: " + String(hic12));
+    printSerial2(", Dew point: "+ String(dpc12));
+    printSerial("-----------");
+  }
+}
+#else
+void measureDHT();
+#endif
+
+/**
+ * Measure temperature from Dallas ds18s20
+ */
+#if ENABLE_DALLAS == 1
+float measureTemp() {
   printSerial("Measuring temperature next.");
   delay(350); // oli: 350
   byte i;
   byte present = 0;
   byte type_s;
   byte data[12];
-  //byte addr[8];
   float celsius, fahrenheit;
     
   //for (int icount = 0; icount<3; icount++) {
@@ -381,38 +467,44 @@ float measureTemp(byte* addr) {
   //}
   return -1000.0;
 }
+#else
+float measureTemp() {
+  return 0.01;
+}
+#endif
 
-#define SENSOR_TEMP 1
-#define SENSOR_HUMIDITY 2
-#define SENSOR_XYZ 3
  
 void loop() {
-  static byte addr[8];
+  
   for (int counter = 0; counter < 3; counter++) {
     printSerial("Loop counter: " + String(counter));
-    float celsius = measureTemp(&addr[0]);
+    float celsius = measureTemp();
     // for later use if (millis() - lastConnectionTime > postingInterval && celsius != -1000) {
     if (celsius != -1000.0) {
-      putInfo(celsius, &addr[0], SENSOR_TEMP);
+      putInfo(celsius, SENSOR_TEMP);
     } else {
       //return;
     }
   }
   WiFi.disconnect();
   digitalWrite(ledPin, LOW);
-  printSerial("Going to sleep now");
+  printSerial2("Going to sleep now");
   delay(100);
   timerEnd(timer);
   timer = NULL;
   esp_deep_sleep_start();
   
-  printSerial("This will never be printed");
+  printSerial2("This will never be printed");
 }
 
 String returnDeviceIDasString() {
-  //chipid=ESP.getEfuseMac();       //The chip ID is essentially its MAC address(length: 6 bytes).
-  //String returnString = printf("%04X",(uint16_t)(chipid>>32));  // print High 2bytes
-  //returnString += printf("%08X",(uint32_t)chipid);              // print Low 4bytes.
+  for(int i=0; i<17; i=i+8) {
+    chipid |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  }
+  Serial.printf("ESP32 Chip model = %s Rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
+  Serial.printf("This chip has %d cores\n", ESP.getChipCores());
+  Serial.print("Chip ID: "); Serial.println(chipId);
+
   
   byte mac[6] = {'\0'};
   WiFi.macAddress(mac);
@@ -420,15 +512,21 @@ String returnDeviceIDasString() {
   return returnString;
 }
 
-String returnSensorIDasString(byte* addr) {
+#if ENABLE_DALLAS == 1
+String returnSensorIDasString(byte *addr) {
   String returnvalue;
   for( int i = 0; i < 8; i++) {
      returnvalue += (String(addr[i], HEX));
   }
   return returnvalue;
 }
+#else
+void returnSensorIDasString(byte *addr) {
+  
+}
+#endif
 
-void putInfo(float temperature, byte* addr, uint8_t type) {
+void putInfo(float temperature, uint8_t type) {
   HTTPClient http;
   printSerial("Send info to server...");
 
@@ -451,7 +549,7 @@ void putInfo(float temperature, byte* addr, uint8_t type) {
     return;
   }
   */
-  char * sensortype;
+  String sensortype;
   switch(type) {
     case SENSOR_TEMP:
       sensortype = "temp";
@@ -463,9 +561,14 @@ void putInfo(float temperature, byte* addr, uint8_t type) {
     break;
   }
   String postString ="&addtemp=" + String(temperature) + "&device=" + returnDeviceIDasString() + "&bc="
-    + String(bootCount) + "&sensorid=" + returnSensorIDasString(addr) + "&type=" + sensortype;
+    + String(bootCount) + "&sensorid=" + 
+  #if ENABLE_DALLAS == 1
+    returnSensorIDasString(&addr) +
+  #endif  
+    "&type=" + sensortype;
+  //String postString = "arg";
   
-  http.begin("http://10.42.2.57/~laama/esp/esp_ui.php");
+  http.begin(endpoint_address);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
   printSerial("POST line: " + postString);
   int httpCode = http.POST(postString);
