@@ -80,6 +80,7 @@ class espdb extends SQLite3 {
 
     # Add new Temperature measurement to table.
     public function addNewMeasurementToDB($type = null, $device = null, $value = null, $esptime = null, $espbc = null, $espSensorID = null) {
+        $this->pi("inside!");
         if ($device === null || $value === null) return -1;
         if ($this->searchDeviceFromDB($device)) {
             # MEASUREMENTS (TYPE, VALUE, DEVICEID, SENSORID, DATETIME, DELETED, DEVICETIME, BOOTCOUNT);";
