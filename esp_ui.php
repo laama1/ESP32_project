@@ -29,7 +29,7 @@ class UIForESP {
                 $sensorID = -1000;
                 $valueType = "undef";
                 $bootcount;
-                $mytime = 0;
+                $mytime = time();
 
                 if (isset($_POST['device']) && $this->alphaNumericCheck($_POST['device'])) {
                     $device = $_POST['device'];
@@ -46,20 +46,25 @@ class UIForESP {
                 }
                 
                 if (isset($_POST['time'])) {
+                    // exact time of measurement
                     $mytime = $_POST['time'];
                 }
 
                 if (isset($_POST['bc']) && is_numeric($_POST['bc'])) {
+                    // bootcount
                     $bootcount = $_POST['bc'];
                 }
-                
+                if (isset($_POST['value']) && is_numeric($_POST['value'])) {
+                    // value of measurement
+                    $value = $_POST['value'];
+                }
                 $this->dp("Device: $device, Value: $value, bootcount: $bootcount\n");
                 echo $this->espdb->addNewMeasurementToDB($valueType, $device, $value, $mytime, $bootcount, $sensorID);
                 return;
             } else if (isset($_POST['hakusana'])) {
                 $searchword = $_POST['hakusana'];
                 echo "Hakusanasi: $searchword <br><br>";
-                $this->espdb->searchWordFromDB($searchword);
+                $this->espdb->searchDeviceFromDB($searchword);
             }
         }
         if (isset($_GET)) {

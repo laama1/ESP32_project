@@ -3,7 +3,7 @@
 // AUTHOR: Lasse Pihlainen
 // CREATED: 22.10.2017
 // Edited: 23.10.2017,
-// LICENSE: BSD
+// LICENSE: no
 
 
 class espdb extends SQLite3 {

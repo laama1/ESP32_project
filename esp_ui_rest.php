@@ -11,7 +11,7 @@ class UIForESP {
 
     public function __construct($arg = null) {
         $this->currentpage = "searchdevice";
-        require_once('espdb.php');
+        require_once(__DIR__.'/espdb.php');
         $this->espdb = new espdb;
 
         if (isset($_GET['page'])) {
@@ -62,7 +62,7 @@ class UIForESP {
             } else if (isset($_POST['hakusana'])) {
                 $searchword = $_POST['hakusana'];
                 echo "Hakusanasi: $searchword <br><br>";
-                $this->espdb->searchWordFromDB($searchword);
+                //$this->espdb->searchWordFromDB($searchword);
             }
         }
         if (isset($_GET)) {
