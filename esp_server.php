@@ -51,7 +51,7 @@ class esp_server {
 			// value of measurement
 			$value = $_GET['value'];
 		}
-		$this->dp("Device: $device, Value: $value, bootcount: $bootcount\n");
+		$this->lok("Device: $device, Value: $value, bootcount: $bootcount");
 		echo $this->espdb->addNewMeasurementToDB($valueType, $device, $value, $mytime, $bootcount, $sensorID);
 		echo "Ding";
 		return;
@@ -66,7 +66,12 @@ class esp_server {
 	# debug print string
 	private function dp($arg = null) {
 		if ($arg === null || $this->debug == 0) return;
-		echo $arg . "<br>\n";
+		echo $arg . "\n";
+	}
+
+	private function lok($arg = null) {
+		if ($arg === null) return;
+		file_put_contents(__DIR__.'/log.log', $arg, FILE_APPEND);
 	}
 }
 
