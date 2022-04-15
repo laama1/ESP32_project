@@ -19,7 +19,7 @@ class espdb extends SQLite3 {
                 echo "Error creating database.<br>";
             }
         } else {
-            $this->pi("SQLite table exist.");
+            $this->pi("SQLite table exists.");
         }
     }
 
@@ -139,7 +139,7 @@ class espdb extends SQLite3 {
                 $this->pe("insertIntoDB prepare statement error.");
             }
         } catch(PDOException $e) {
-            $this->pe("insertIntoDB: ".$e);
+            $this->pe("insertIntoDB: ".$e . ", DB path: ".$this->dbpath);
         } catch(EXCeption $e) {
             $this->pe("insertIntoDB: ".$e);
         }
