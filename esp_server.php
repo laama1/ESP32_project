@@ -53,6 +53,7 @@ class esp_server {
 		}
 		$this->dp("Device: $device, Value: $value, bootcount: $bootcount\n");
 		echo $this->espdb->addNewMeasurementToDB($valueType, $device, $value, $mytime, $bootcount, $sensorID);
+		echo "Ding";
 		return;
 	}
 

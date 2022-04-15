@@ -12,6 +12,7 @@ class espdb extends SQLite3 {
     protected $DEBUG = 1;
 
     public function __construct($arg = null) {
+        $this->dbpath = __DIR__ .'/esp.sqlite';
         if (!file_exists($this->dbpath)) {
             if ($this->createDB()) {
                 echo "Database created.<br>";
